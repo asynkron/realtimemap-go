@@ -39,3 +39,6 @@ npm run serve
 
 The app is available on [localhost:8080](http://localhost:8080/).
 
+## How does it work?
+
+Please refer to the [.NET version README](https://github.com/asynkron/realtimemap-dotnet#how-does-it-work) for a detailed description of the architecture.
