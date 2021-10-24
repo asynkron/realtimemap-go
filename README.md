@@ -22,6 +22,9 @@ The goals of this app are:
 
 ## Running the app
 
+Prerequisites:
+1. Go 1.17+
+1. node.js 16+
 
 Configure Mapbox:
 1. Create an account on [Mapbox](https://www.mapbox.com/).
