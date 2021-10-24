@@ -1,0 +1,67 @@
+syntax = "proto3";
+package grains;
+
+message Empty {}
+
+message Position {
+    string vehicle_id = 1;
+    string org_id = 2;
+    int64 timestamp = 3;
+    double longitude = 4;
+    double latitude = 5;
+    int32 heading = 6;
+    bool doors_open = 7;
+    double speed = 8;
+}
+
+message PositionBatch {
+    repeated Position positions = 1;
+}
+
+message GeoPoint {
+    double longitude = 1;
+    double latitude = 2;
+}
+
+message Notification {
+    string message = 1;
+}
+
+message Viewport {
+    GeoPoint south_west = 1;
+    GeoPoint north_east = 2;
+}
+
+message UpdateViewport {
+    Viewport viewport = 1;
+}
+
+message GetGeofencesRequest {
+    string org_id = 1;
+}
+
+message GeofenceDetails {
+    string name = 1;
+    double radiusInMeters = 2;
+    double longitude = 3;
+    double latitude = 4;
+    string org_id = 5;
+    repeated string vehicles_in_zone = 6;
+}
+
+message GetGeofencesResponse {
+  repeated GeofenceDetails geofences = 1;
+}
+
+message GetPositionsHistoryRequest {
+}
+
+service Vehicle {
+    rpc OnPosition(Position) returns (Empty) {}
+    rpc GetPositionsHistory(GetPositionsHistoryRequest) returns (PositionBatch);
+}
+
+service Organization {
+    rpc OnPosition (Position) returns (Empty);
+    rpc GetGeofences(GetGeofencesRequest) returns (GetGeofencesResponse);
+}
