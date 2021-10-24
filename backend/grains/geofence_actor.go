@@ -34,8 +34,7 @@ func (g *geofenceActor) Receive(ctx actor.Context) {
 			if !vehicleIsInZone {
 				g.vehiclesInZone[msg.VehicleId] = struct{}{}
 
-				// TODO: fix once its possible to broadcast in whole cluster
-				g.cluster.ActorSystem.EventStream.Publish(&Notification{
+				g.cluster.MemberList.BroadcastEvent(&Notification{
 					Message: fmt.Sprintf("%s from %s entered the zone %s", msg.VehicleId, g.organizationName, g.geofence.Name),
 				})
 
@@ -45,8 +44,7 @@ func (g *geofenceActor) Receive(ctx actor.Context) {
 			if vehicleIsInZone {
 				delete(g.vehiclesInZone, msg.VehicleId)
 
-				// TODO: fix once its possible to broadcast in whole cluster
-				g.cluster.ActorSystem.EventStream.Publish(&Notification{
+				g.cluster.MemberList.BroadcastEvent(&Notification{
 					Message: fmt.Sprintf("%s from %s left the zone %s", msg.VehicleId, g.organizationName, g.geofence.Name),
 				})
 
