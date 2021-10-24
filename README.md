@@ -16,6 +16,10 @@ The goals of this app are:
 1. Presenting a semi-real-world use case of the distributed actor model.
 1. Aiding people in learning how to use Proto.Actor.
 
+**[Find more about Proto.Actor here.](https://proto.actor/)**
+
+![image](https://user-images.githubusercontent.com/1219044/132653003-58733735-f49a-4615-adb5-36552b1415c1.png)
+
 ## Running the app
 
 
