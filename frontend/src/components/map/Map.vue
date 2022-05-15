@@ -8,7 +8,6 @@
 import { defineComponent, PropType } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import mapboxConfig from '@/mapboxConfig';
 import { addVehicleTrailLayer } from './vehicleTrailsLayer';
 import { addGeofencesLayer, Geofence, setGeofences } from './geofencesLayer';
 import { VehicleStates, handlePositionEvent, clearVehiclesOutsideOfViewbox } from "./vehicleStates";
@@ -17,6 +16,7 @@ import { addVehiclesLayer } from './vehiclesLayer';
 import { addVehicleClustersLayer } from './vehicleClustersLayer';
 import { handleViewportUpdates } from './viewportUpdates';
 import { HubConnection} from "@/hub";
+import config from "@/config";
 
 export default defineComponent({
   name: 'Map',
@@ -40,7 +40,7 @@ export default defineComponent({
   },
 
   mounted() {
-    mapboxgl.accessToken = mapboxConfig.getAccessToken();
+    mapboxgl.accessToken = config.mapboxToken;
 
     this.map = new mapboxgl.Map({
       container: 'map',
@@ -51,14 +51,11 @@ export default defineComponent({
 
     const vehicleStates: VehicleStates = {};
 
-    if(this.hubConnection !== undefined) {
-      this.hubConnection.onPositions(positions => {
-        for(const position of positions.positions) {
-          handlePositionEvent(vehicleStates, position);
-        }
-      })
-
-    }
+    this.hubConnection?.onPositions(positions => {
+      for(const position of positions.positions) {
+        handlePositionEvent(vehicleStates, position);
+      }
+    });
 
     this.map.on('load', () => {
 
@@ -81,6 +78,10 @@ export default defineComponent({
 
   },
 
+  unmounted() {
+    this.hubConnection?.clearPositionsCallback();
+  },
+
   watch: {
     geofences(newGeofences: Geofence[] | undefined) {
       setGeofences(this.map, newGeofences);
@@ -98,7 +99,6 @@ body {
 
 #map {
   position: relative;
-  /* top: 20px; */
   height: 100%;
   width: 100%;
 }

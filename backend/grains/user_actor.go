@@ -10,7 +10,7 @@ import (
 const BatchSize = 10
 
 type SendPositions func(connectionID string, positions *PositionBatch)
-type SendNotification func(connectionID string, message string)
+type SendNotification func(connectionID string, notification *Notification)
 
 type userActor struct {
 	connectionID     string
@@ -60,7 +60,7 @@ func (u *userActor) Receive(ctx actor.Context) {
 		}
 
 	case *Notification:
-		u.sendNotification(u.connectionID, msg.Message)
+		u.sendNotification(u.connectionID, msg)
 
 	case *UpdateViewport:
 		u.viewport = *msg.Viewport

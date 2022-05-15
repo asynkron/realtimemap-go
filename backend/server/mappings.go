@@ -45,6 +45,16 @@ func mapOrganization(org *data.Organization, grainResponse *grains.GetGeofencesR
 	}
 }
 
+func mapNotification(notification *grains.Notification) *contract.Notification {
+	return &contract.Notification{
+		VehicleId: notification.VehicleId,
+		OrgId:     notification.OrgId,
+		OrgName:   notification.OrgName,
+		ZoneName:  notification.ZoneName,
+		Event:     []string{"Enter", "Exit"}[notification.Event],
+	}
+}
+
 func mapGeofence(grainGeofence *grains.GeofenceDetails) *contract.Geofence {
 	vehicles := make([]string, len(grainGeofence.VehiclesInZone))
 	copy(vehicles, grainGeofence.VehiclesInZone)

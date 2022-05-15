@@ -1,8 +1,6 @@
 package grains
 
 import (
-	"fmt"
-
 	"realtimemap-go/backend/data"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -35,20 +33,22 @@ func (g *geofenceActor) Receive(ctx actor.Context) {
 				g.vehiclesInZone[msg.VehicleId] = struct{}{}
 
 				g.cluster.MemberList.BroadcastEvent(&Notification{
-					Message: fmt.Sprintf("%s from %s entered the zone %s", msg.VehicleId, g.organizationName, g.geofence.Name),
-				})
-
-				fmt.Printf("%s from %s entered the zone %s\n", msg.VehicleId, g.organizationName, g.geofence.Name)
+					VehicleId: msg.VehicleId,
+					OrgId:     msg.OrgId,
+					OrgName:   g.organizationName,
+					ZoneName:  g.geofence.Name,
+					Event:     enter})
 			}
 		} else {
 			if vehicleIsInZone {
 				delete(g.vehiclesInZone, msg.VehicleId)
 
 				g.cluster.MemberList.BroadcastEvent(&Notification{
-					Message: fmt.Sprintf("%s from %s left the zone %s", msg.VehicleId, g.organizationName, g.geofence.Name),
-				})
-
-				fmt.Printf("%s from %s left the zone %s\n", msg.VehicleId, g.organizationName, g.geofence.Name)
+					VehicleId: msg.VehicleId,
+					OrgId:     msg.OrgId,
+					OrgName:   g.organizationName,
+					ZoneName:  g.geofence.Name,
+					Event:     exit})
 			}
 		}
 

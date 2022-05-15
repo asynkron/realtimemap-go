@@ -23,8 +23,17 @@ message GeoPoint {
     double latitude = 2;
 }
 
+enum GeofenceEvent {
+    enter = 0;
+    exit = 1;
+}
+
 message Notification {
-    string message = 1;
+    string vehicle_id = 1;
+    string org_id = 2;
+    string org_name = 3;
+    string zone_name = 4;
+    GeofenceEvent event = 5;
 }
 
 message Viewport {

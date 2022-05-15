@@ -33,3 +33,11 @@ type Geofence struct {
 	RadiusInMeters float64  `json:"radiusInMeters"`
 	VehiclesInZone []string `json:"vehiclesInZone"`
 }
+
+type Notification struct {
+	VehicleId string `json:"vehicleId"`
+	OrgId     string `json:"orgId"`
+	OrgName   string `json:"orgName"`
+	ZoneName  string `json:"zoneName"`
+	Event     string `json:"event"`
+}

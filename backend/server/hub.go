@@ -45,9 +45,9 @@ func (h *AppHub) SendPositionBatch(connectionID string, batch *grains.PositionBa
 	}
 }
 
-func (h *AppHub) SendNotification(connectionID string, message string) {
+func (h *AppHub) SendNotification(connectionID string, notification *grains.Notification) {
 	if h.initialized {
-		h.Clients().Client(connectionID).Send("notification", message)
+		h.Clients().Client(connectionID).Send("notification", mapNotification(notification))
 	}
 }
 

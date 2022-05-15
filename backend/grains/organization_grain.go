@@ -76,7 +76,7 @@ func (o *organizationGrain) GetGeofences(_ *GetGeofencesRequest, ctx cluster.Gra
 			if geofence, ok := res.(*GeofenceDetails); ok {
 				geofences = append(geofences, geofence)
 			} else {
-				fmt.Println("WTF did you send me")
+				fmt.Printf("%v is not a GeofenceDetails", res)
 			}
 		} else {
 			return nil, err

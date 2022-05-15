@@ -9,8 +9,8 @@ import (
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/cluster"
-	logmod "github.com/AsynkronIT/protoactor-go/log"
 	"github.com/AsynkronIT/protoactor-go/remote"
+	logmod "github.com/AsynkronIT/protoactor-go/log"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -51,6 +51,7 @@ type Vehicle interface {
 	ReceiveDefault(ctx actor.Context)
 	OnPosition(*Position, cluster.GrainContext) (*Empty, error)
 	GetPositionsHistory(*GetPositionsHistoryRequest, cluster.GrainContext) (*PositionBatch, error)
+	
 }
 
 // VehicleGrainClient holds the base data for the VehicleGrain
@@ -116,6 +117,7 @@ func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, 
 		return nil, errors.New("unknown response")
 	}
 }
+
 
 // VehicleActor represents the actor structure
 type VehicleActor struct {
@@ -191,13 +193,12 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 			}
 			resp := &cluster.GrainResponse{MessageData: bytes}
 			ctx.Respond(resp)
-
+		
 		}
 	default:
 		a.inner.ReceiveDefault(ctx)
 	}
 }
-
 var xOrganizationFactory func() Organization
 
 // OrganizationFactory produces a Organization
@@ -223,6 +224,7 @@ type Organization interface {
 	ReceiveDefault(ctx actor.Context)
 	OnPosition(*Position, cluster.GrainContext) (*Empty, error)
 	GetGeofences(*GetGeofencesRequest, cluster.GrainContext) (*GetGeofencesResponse, error)
+	
 }
 
 // OrganizationGrainClient holds the base data for the OrganizationGrain
@@ -288,6 +290,7 @@ func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...*
 		return nil, errors.New("unknown response")
 	}
 }
+
 
 // OrganizationActor represents the actor structure
 type OrganizationActor struct {
@@ -363,7 +366,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 			}
 			resp := &cluster.GrainResponse{MessageData: bytes}
 			ctx.Respond(resp)
-
+		
 		}
 	default:
 		a.inner.ReceiveDefault(ctx)
