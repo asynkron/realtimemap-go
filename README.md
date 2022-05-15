@@ -24,12 +24,12 @@ The goals of this app are:
 
 Prerequisites:
 1. Go 1.17+
-1. node.js 16+
+1. node.js 17+
 
 Configure Mapbox:
 1. Create an account on [Mapbox](https://www.mapbox.com/).
 1. Copy a token from: main dashboard / access tokens / default public token.
-1. Paste the token in `frontend\src\mapboxConfig.ts`.
+1. Paste the token in `frontend\src\config.ts`.
 
 Start Backend:
 ```
