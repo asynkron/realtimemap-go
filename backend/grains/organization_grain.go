@@ -6,53 +6,32 @@ import (
 
 	"realtimemap-go/backend/data"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/cluster"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/cluster"
 )
 
-type organizationGrain struct {
-	id          string
-	name        string
-	initialized bool
-	cluster     *cluster.Cluster
+type OrganizationGrain struct {
+	name string
 }
 
-func CreateOrganizationFactory(cluster *cluster.Cluster) func() Organization {
-	return func() Organization {
-		return &organizationGrain{cluster: cluster}
-	}
-}
-
-func (o *organizationGrain) Init(id string) {
-	o.id = id
-}
-
-func (o *organizationGrain) initializeOrgIfNeeded(ctx cluster.GrainContext) {
-	if o.initialized {
-		return
-	}
-
-	if organization, ok := data.AllOrganizations[o.id]; ok {
+func (o *OrganizationGrain) Init(ctx cluster.GrainContext) {
+	if organization, ok := data.AllOrganizations[ctx.Identity()]; ok {
 		o.name = organization.Name
 		for _, geofence := range organization.Geofences {
 			o.createGeofenceActor(geofence, ctx)
 		}
 	}
-
-	o.initialized = true
+	fmt.Printf("OrganizationGrain %v initialized\n", ctx.Identity())
 }
 
-func (o *organizationGrain) createGeofenceActor(geofence *data.CircularGeofence, ctx cluster.GrainContext) {
+func (o *OrganizationGrain) createGeofenceActor(geofence *data.CircularGeofence, ctx cluster.GrainContext) {
 	props := actor.PropsFromProducer(func() actor.Actor {
-		return NewGeofenceActor(o.name, geofence, o.cluster)
+		return NewGeofenceActor(o.name, geofence)
 	})
 	ctx.Spawn(props)
 }
 
-func (o *organizationGrain) OnPosition(position *Position, ctx cluster.GrainContext) (*Empty, error) {
-	// TODO: normally this would be peformed in the Init func, but the generated code does not pass context to it
-	o.initializeOrgIfNeeded(ctx)
-
+func (o *OrganizationGrain) OnPosition(position *Position, ctx cluster.GrainContext) (*Empty, error) {
 	for _, geofenceActor := range ctx.Children() {
 		ctx.Send(geofenceActor, position)
 	}
@@ -60,12 +39,12 @@ func (o *organizationGrain) OnPosition(position *Position, ctx cluster.GrainCont
 	return &Empty{}, nil
 }
 
-func (o *organizationGrain) GetGeofences(_ *GetGeofencesRequest, ctx cluster.GrainContext) (*GetGeofencesResponse, error) {
+func (o *OrganizationGrain) GetGeofences(_ *GetGeofencesRequest, ctx cluster.GrainContext) (*GetGeofencesResponse, error) {
 
 	futures := make([]*actor.Future, 0, len(ctx.Children()))
 
 	for _, child := range ctx.Children() {
-		future := ctx.RequestFuture(child, &GetGeofencesRequest{OrgId: o.id}, 5*time.Second)
+		future := ctx.RequestFuture(child, &GetGeofencesRequest{OrgId: ctx.Identity()}, 5*time.Second)
 		futures = append(futures, future)
 	}
 
@@ -86,5 +65,5 @@ func (o *organizationGrain) GetGeofences(_ *GetGeofencesRequest, ctx cluster.Gra
 	return &GetGeofencesResponse{Geofences: geofences}, nil
 }
 
-func (o *organizationGrain) Terminate()                       {}
-func (o *organizationGrain) ReceiveDefault(ctx actor.Context) {}
+func (o *OrganizationGrain) Terminate(ctx cluster.GrainContext)      {}
+func (o *OrganizationGrain) ReceiveDefault(ctx cluster.GrainContext) {}

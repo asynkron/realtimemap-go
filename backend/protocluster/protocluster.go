@@ -3,32 +3,31 @@ package protocluster
 import (
 	"realtimemap-go/backend/grains"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/cluster"
-	"github.com/AsynkronIT/protoactor-go/cluster/automanaged"
-	"github.com/AsynkronIT/protoactor-go/remote"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/cluster"
+	"github.com/asynkron/protoactor-go/cluster/clusterproviders/automanaged"
+	"github.com/asynkron/protoactor-go/cluster/identitylookup/disthash"
+	"github.com/asynkron/protoactor-go/remote"
 )
 
 func StartNode() *cluster.Cluster {
 	system := actor.NewActorSystem()
 
-	vehicleKind := cluster.NewKind("Vehicle", actor.PropsFromProducer((func() actor.Actor {
-		return &grains.VehicleActor{}
-	})))
-	organizationKind := cluster.NewKind("Organization", actor.PropsFromProducer((func() actor.Actor {
-		return &grains.OrganizationActor{}
-	})))
+	vehicleKind := grains.NewVehicleKind(func() grains.Vehicle {
+		return &grains.VehicleGrain{}
+	}, 0)
+	organizationKind := grains.NewOrganizationKind(func() grains.Organization {
+		return &grains.OrganizationGrain{}
+	}, 0)
 
 	provider := automanaged.New()
 	config := remote.Configure("localhost", 0)
+	lookup := disthash.New()
 
-	clusterConfig := cluster.Configure("my-cluster", provider, config, vehicleKind, organizationKind)
+	clusterConfig := cluster.Configure("my-cluster", provider, lookup, config, cluster.WithKinds(vehicleKind, organizationKind))
 	cluster := cluster.New(system, clusterConfig)
 
-	grains.VehicleFactory(grains.CreateVehicleFactory(cluster))
-	grains.OrganizationFactory(grains.CreateOrganizationFactory(cluster))
-
-	cluster.Start()
+	cluster.StartMember()
 
 	return cluster
 }

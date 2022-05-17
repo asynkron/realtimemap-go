@@ -25,7 +25,7 @@
       <img src="../assets/protoactor.svg" class="logo" />
     </a>
 
-    <a href="https://github.com/AsynkronIT/realtimemap" target="_blank" rel="noopener noreferrer" class="h-full px-3 hidden md:block">
+    <a href="https://github.com/asynkron/realtimemap" target="_blank" rel="noopener noreferrer" class="h-full px-3 hidden md:block">
       <i class="pi pi-github text-3xl"></i>
     </a>
 
@@ -60,7 +60,7 @@
     </video>
     <h3>More information</h3>
     <ul>
-      <li><a href="https://github.com/AsynkronIT/realtimemap" target="_blank">Github page</a></li>
+      <li><a href="https://github.com/asynkron/realtimemap" target="_blank">Github page</a></li>
       <li><a href="https://proto.actor" target="_blank">Proto.Actor framework</a></li>
       <li><a href="https://www.etteplan.com" target="_blank">Etteplan</a></li>
     </ul>

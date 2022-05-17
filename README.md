@@ -23,7 +23,7 @@ The goals of this app are:
 ## Running the app
 
 Prerequisites:
-1. Go 1.17+
+1. Go 1.18+
 1. node.js 17+
 
 Configure Mapbox:

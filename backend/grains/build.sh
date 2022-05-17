@@ -9,11 +9,11 @@
 #
 # 2. Install plugins
 # 
-# go install github.com/gogo/protobuf/protoc-gen-gogoslick@latest
-# go install github.com/AsynkronIT/protoactor-go/protobuf/protoc-gen-gograinv2@latest
+# go install github.com/golang/protobuf/protoc-gen-go@latest
+# go install github.com/asynkron/protoactor-go/protobuf/protoc-gen-gograinv2@latest
 #
 #
 # (make sure go installation path is on your PATH)
 
-protoc -I=. -I=$GOPATH/src --gogoslick_out=. protos.proto
+protoc -I=. -I=$GOPATH/src --go_opt=paths=source_relative --go_out=. protos.proto
 protoc -I=. -I=$GOPATH/src --gograinv2_out=. protos.proto

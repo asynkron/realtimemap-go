@@ -7,15 +7,14 @@ import (
 	"math"
 	"time"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/cluster"
-	"github.com/AsynkronIT/protoactor-go/remote"
-	logmod "github.com/AsynkronIT/protoactor-go/log"
-	"github.com/gogo/protobuf/proto"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/cluster"
+	logmod "github.com/asynkron/protoactor-go/log"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
-	plog = logmod.New(logmod.InfoLevel, "[GRAIN]")
+	plog = logmod.New(logmod.InfoLevel, "[GRAIN][grains]")
 	_    = proto.Marshal
 	_    = fmt.Errorf
 	_    = math.Inf
@@ -33,7 +32,7 @@ func VehicleFactory(factory func() Vehicle) {
 	xVehicleFactory = factory
 }
 
-// GetVehicleGrainClient instantiates a new VehicleGrainClient with given ID
+// GetVehicleGrainClient instantiates a new VehicleGrainClient with given Identity
 func GetVehicleGrainClient(c *cluster.Cluster, id string) *VehicleGrainClient {
 	if c == nil {
 		panic(fmt.Errorf("nil cluster instance"))
@@ -41,14 +40,37 @@ func GetVehicleGrainClient(c *cluster.Cluster, id string) *VehicleGrainClient {
 	if id == "" {
 		panic(fmt.Errorf("empty id"))
 	}
-	return &VehicleGrainClient{ID: id, cluster: c}
+	return &VehicleGrainClient{Identity: id, cluster: c}
+}
+
+// GetVehicleKind instantiates a new cluster.Kind for Vehicle
+func GetVehicleKind(opts ...actor.PropsOption) *cluster.Kind {
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return &VehicleActor{
+			Timeout: 60 * time.Second,
+		}
+	}, opts...)
+	kind := cluster.NewKind("Vehicle", props)
+	return kind
+}
+
+// GetVehicleKind instantiates a new cluster.Kind for Vehicle
+func NewVehicleKind(factory func() Vehicle, timeout time.Duration ,opts ...actor.PropsOption) *cluster.Kind {
+	xVehicleFactory = factory
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return &VehicleActor{
+			Timeout: timeout,
+		}
+	}, opts...)
+	kind := cluster.NewKind("Vehicle", props)
+	return kind
 }
 
 // Vehicle interfaces the services available to the Vehicle
 type Vehicle interface {
-	Init(id string)
-	Terminate()
-	ReceiveDefault(ctx actor.Context)
+	Init(ctx cluster.GrainContext)
+	Terminate(ctx cluster.GrainContext)
+	ReceiveDefault(ctx cluster.GrainContext)
 	OnPosition(*Position, cluster.GrainContext) (*Empty, error)
 	GetPositionsHistory(*GetPositionsHistoryRequest, cluster.GrainContext) (*PositionBatch, error)
 	
@@ -56,18 +78,18 @@ type Vehicle interface {
 
 // VehicleGrainClient holds the base data for the VehicleGrain
 type VehicleGrainClient struct {
-	ID      string
+	Identity      string
 	cluster *cluster.Cluster
 }
 
 // OnPosition requests the execution on to the cluster with CallOptions
-func (g *VehicleGrainClient) OnPosition(r *Position, opts ...*cluster.GrainCallOptions) (*Empty, error) {
+func (g *VehicleGrainClient) OnPosition(r *Position, opts ...cluster.GrainCallOption) (*Empty, error) {
 	bytes, err := proto.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 0, MessageData: bytes}
-	resp, err := g.cluster.Call(g.ID, "Vehicle", reqMsg, opts...)
+	resp, err := g.cluster.Call(g.Identity, "Vehicle", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +102,6 @@ func (g *VehicleGrainClient) OnPosition(r *Position, opts ...*cluster.GrainCallO
 		}
 		return result, nil
 	case *cluster.GrainErrorResponse:
-		if msg.Code == remote.ResponseStatusCodeDeadLetter.ToInt32() {
-			return nil, remote.ErrDeadLetter
-		}
 		return nil, errors.New(msg.Err)
 	default:
 		return nil, errors.New("unknown response")
@@ -90,13 +109,13 @@ func (g *VehicleGrainClient) OnPosition(r *Position, opts ...*cluster.GrainCallO
 }
 
 // GetPositionsHistory requests the execution on to the cluster with CallOptions
-func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, opts ...*cluster.GrainCallOptions) (*PositionBatch, error) {
+func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, opts ...cluster.GrainCallOption) (*PositionBatch, error) {
 	bytes, err := proto.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 1, MessageData: bytes}
-	resp, err := g.cluster.Call(g.ID, "Vehicle", reqMsg, opts...)
+	resp, err := g.cluster.Call(g.Identity, "Vehicle", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +128,6 @@ func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, 
 		}
 		return result, nil
 	case *cluster.GrainErrorResponse:
-		if msg.Code == remote.ResponseStatusCodeDeadLetter.ToInt32() {
-			return nil, remote.ErrDeadLetter
-		}
 		return nil, errors.New(msg.Err)
 	default:
 		return nil, errors.New("unknown response")
@@ -121,6 +137,7 @@ func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, 
 
 // VehicleActor represents the actor structure
 type VehicleActor struct {
+	ctx     cluster.GrainContext
 	inner   Vehicle
 	Timeout time.Duration
 }
@@ -128,18 +145,19 @@ type VehicleActor struct {
 // Receive ensures the lifecycle of the actor for the received message
 func (a *VehicleActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case *actor.Started:
+	case *actor.Started: //pass
 	case *cluster.ClusterInit:
+		a.ctx = cluster.NewGrainContext(ctx, msg.Identity, msg.Cluster)
 		a.inner = xVehicleFactory()
-		a.inner.Init(msg.ID)
+		a.inner.Init(a.ctx)
+
 		if a.Timeout > 0 {
 			ctx.SetReceiveTimeout(a.Timeout)
 		}
-
-	case *actor.ReceiveTimeout:
-		a.inner.Terminate()
+	case *actor.ReceiveTimeout:		
 		ctx.Poison(ctx.Self())
-
+	case *actor.Stopped:
+		a.inner.Terminate(a.ctx)
 	case actor.AutoReceiveMessage: // pass
 	case actor.SystemMessage: // pass
 
@@ -154,7 +172,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 				ctx.Respond(resp)
 				return
 			}
-			r0, err := a.inner.OnPosition(req, ctx)
+			r0, err := a.inner.OnPosition(req, a.ctx)
 			if err != nil {
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
@@ -178,7 +196,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 				ctx.Respond(resp)
 				return
 			}
-			r0, err := a.inner.GetPositionsHistory(req, ctx)
+			r0, err := a.inner.GetPositionsHistory(req, a.ctx)
 			if err != nil {
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
@@ -196,7 +214,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 		
 		}
 	default:
-		a.inner.ReceiveDefault(ctx)
+		a.inner.ReceiveDefault(a.ctx)
 	}
 }
 var xOrganizationFactory func() Organization
@@ -206,7 +224,7 @@ func OrganizationFactory(factory func() Organization) {
 	xOrganizationFactory = factory
 }
 
-// GetOrganizationGrainClient instantiates a new OrganizationGrainClient with given ID
+// GetOrganizationGrainClient instantiates a new OrganizationGrainClient with given Identity
 func GetOrganizationGrainClient(c *cluster.Cluster, id string) *OrganizationGrainClient {
 	if c == nil {
 		panic(fmt.Errorf("nil cluster instance"))
@@ -214,14 +232,37 @@ func GetOrganizationGrainClient(c *cluster.Cluster, id string) *OrganizationGrai
 	if id == "" {
 		panic(fmt.Errorf("empty id"))
 	}
-	return &OrganizationGrainClient{ID: id, cluster: c}
+	return &OrganizationGrainClient{Identity: id, cluster: c}
+}
+
+// GetOrganizationKind instantiates a new cluster.Kind for Organization
+func GetOrganizationKind(opts ...actor.PropsOption) *cluster.Kind {
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return &OrganizationActor{
+			Timeout: 60 * time.Second,
+		}
+	}, opts...)
+	kind := cluster.NewKind("Organization", props)
+	return kind
+}
+
+// GetOrganizationKind instantiates a new cluster.Kind for Organization
+func NewOrganizationKind(factory func() Organization, timeout time.Duration ,opts ...actor.PropsOption) *cluster.Kind {
+	xOrganizationFactory = factory
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return &OrganizationActor{
+			Timeout: timeout,
+		}
+	}, opts...)
+	kind := cluster.NewKind("Organization", props)
+	return kind
 }
 
 // Organization interfaces the services available to the Organization
 type Organization interface {
-	Init(id string)
-	Terminate()
-	ReceiveDefault(ctx actor.Context)
+	Init(ctx cluster.GrainContext)
+	Terminate(ctx cluster.GrainContext)
+	ReceiveDefault(ctx cluster.GrainContext)
 	OnPosition(*Position, cluster.GrainContext) (*Empty, error)
 	GetGeofences(*GetGeofencesRequest, cluster.GrainContext) (*GetGeofencesResponse, error)
 	
@@ -229,18 +270,18 @@ type Organization interface {
 
 // OrganizationGrainClient holds the base data for the OrganizationGrain
 type OrganizationGrainClient struct {
-	ID      string
+	Identity      string
 	cluster *cluster.Cluster
 }
 
 // OnPosition requests the execution on to the cluster with CallOptions
-func (g *OrganizationGrainClient) OnPosition(r *Position, opts ...*cluster.GrainCallOptions) (*Empty, error) {
+func (g *OrganizationGrainClient) OnPosition(r *Position, opts ...cluster.GrainCallOption) (*Empty, error) {
 	bytes, err := proto.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 0, MessageData: bytes}
-	resp, err := g.cluster.Call(g.ID, "Organization", reqMsg, opts...)
+	resp, err := g.cluster.Call(g.Identity, "Organization", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -253,9 +294,6 @@ func (g *OrganizationGrainClient) OnPosition(r *Position, opts ...*cluster.Grain
 		}
 		return result, nil
 	case *cluster.GrainErrorResponse:
-		if msg.Code == remote.ResponseStatusCodeDeadLetter.ToInt32() {
-			return nil, remote.ErrDeadLetter
-		}
 		return nil, errors.New(msg.Err)
 	default:
 		return nil, errors.New("unknown response")
@@ -263,13 +301,13 @@ func (g *OrganizationGrainClient) OnPosition(r *Position, opts ...*cluster.Grain
 }
 
 // GetGeofences requests the execution on to the cluster with CallOptions
-func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...*cluster.GrainCallOptions) (*GetGeofencesResponse, error) {
+func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...cluster.GrainCallOption) (*GetGeofencesResponse, error) {
 	bytes, err := proto.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 1, MessageData: bytes}
-	resp, err := g.cluster.Call(g.ID, "Organization", reqMsg, opts...)
+	resp, err := g.cluster.Call(g.Identity, "Organization", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -282,9 +320,6 @@ func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...*
 		}
 		return result, nil
 	case *cluster.GrainErrorResponse:
-		if msg.Code == remote.ResponseStatusCodeDeadLetter.ToInt32() {
-			return nil, remote.ErrDeadLetter
-		}
 		return nil, errors.New(msg.Err)
 	default:
 		return nil, errors.New("unknown response")
@@ -294,6 +329,7 @@ func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...*
 
 // OrganizationActor represents the actor structure
 type OrganizationActor struct {
+	ctx     cluster.GrainContext
 	inner   Organization
 	Timeout time.Duration
 }
@@ -301,18 +337,19 @@ type OrganizationActor struct {
 // Receive ensures the lifecycle of the actor for the received message
 func (a *OrganizationActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case *actor.Started:
+	case *actor.Started: //pass
 	case *cluster.ClusterInit:
+		a.ctx = cluster.NewGrainContext(ctx, msg.Identity, msg.Cluster)
 		a.inner = xOrganizationFactory()
-		a.inner.Init(msg.ID)
+		a.inner.Init(a.ctx)
+
 		if a.Timeout > 0 {
 			ctx.SetReceiveTimeout(a.Timeout)
 		}
-
-	case *actor.ReceiveTimeout:
-		a.inner.Terminate()
+	case *actor.ReceiveTimeout:		
 		ctx.Poison(ctx.Self())
-
+	case *actor.Stopped:
+		a.inner.Terminate(a.ctx)
 	case actor.AutoReceiveMessage: // pass
 	case actor.SystemMessage: // pass
 
@@ -327,7 +364,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 				ctx.Respond(resp)
 				return
 			}
-			r0, err := a.inner.OnPosition(req, ctx)
+			r0, err := a.inner.OnPosition(req, a.ctx)
 			if err != nil {
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
@@ -351,7 +388,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 				ctx.Respond(resp)
 				return
 			}
-			r0, err := a.inner.GetGeofences(req, ctx)
+			r0, err := a.inner.GetGeofences(req, a.ctx)
 			if err != nil {
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
@@ -369,6 +406,6 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 		
 		}
 	default:
-		a.inner.ReceiveDefault(ctx)
+		a.inner.ReceiveDefault(a.ctx)
 	}
 }

@@ -3,8 +3,8 @@ package grains
 import (
 	"fmt"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/eventstream"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/eventstream"
 )
 
 const BatchSize = 10

@@ -8,7 +8,7 @@ import (
 
 	"realtimemap-go/backend/grains"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	kitlog "github.com/go-kit/log"
 	"github.com/philippseith/signalr"
 )

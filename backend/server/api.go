@@ -11,7 +11,7 @@ import (
 	"realtimemap-go/backend/data"
 	"realtimemap-go/backend/grains"
 
-	"github.com/AsynkronIT/protoactor-go/cluster"
+	"github.com/asynkron/protoactor-go/cluster"
 )
 
 func serveApi(e *echo.Echo, cluster *cluster.Cluster) {

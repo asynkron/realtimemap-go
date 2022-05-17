@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AsynkronIT/protoactor-go/cluster"
+	"github.com/asynkron/protoactor-go/cluster"
 	echo "github.com/labstack/echo/v4"
 	"github.com/rs/cors"
 )

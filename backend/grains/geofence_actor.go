@@ -3,20 +3,18 @@ package grains
 import (
 	"realtimemap-go/backend/data"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/cluster"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/cluster"
 )
 
 type geofenceActor struct {
-	cluster          *cluster.Cluster
 	organizationName string
 	geofence         data.CircularGeofence
 	vehiclesInZone   map[string]struct{}
 }
 
-func NewGeofenceActor(organizationName string, geofence *data.CircularGeofence, cluster *cluster.Cluster) actor.Actor {
+func NewGeofenceActor(organizationName string, geofence *data.CircularGeofence) actor.Actor {
 	return &geofenceActor{
-		cluster:          cluster,
 		organizationName: organizationName,
 		geofence:         *geofence,
 		vehiclesInZone:   make(map[string]struct{})}
@@ -26,29 +24,30 @@ func (g *geofenceActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 
 	case *Position:
+		cl := cluster.GetCluster(ctx.ActorSystem())
 		_, vehicleIsInZone := g.vehiclesInZone[msg.VehicleId]
 
 		if g.geofence.IncludesPosition(msg.Latitude, msg.Longitude) {
 			if !vehicleIsInZone {
 				g.vehiclesInZone[msg.VehicleId] = struct{}{}
 
-				g.cluster.MemberList.BroadcastEvent(&Notification{
+				cl.MemberList.BroadcastEvent(&Notification{
 					VehicleId: msg.VehicleId,
 					OrgId:     msg.OrgId,
 					OrgName:   g.organizationName,
 					ZoneName:  g.geofence.Name,
-					Event:     enter})
+					Event:     GeofenceEvent_Enter}, true)
 			}
 		} else {
 			if vehicleIsInZone {
 				delete(g.vehiclesInZone, msg.VehicleId)
 
-				g.cluster.MemberList.BroadcastEvent(&Notification{
+				cl.MemberList.BroadcastEvent(&Notification{
 					VehicleId: msg.VehicleId,
 					OrgId:     msg.OrgId,
 					OrgName:   g.organizationName,
 					ZoneName:  g.geofence.Name,
-					Event:     exit})
+					Event:     GeofenceEvent_Exit}, true)
 			}
 		}
 

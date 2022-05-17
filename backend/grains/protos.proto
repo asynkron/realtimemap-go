@@ -1,6 +1,8 @@
 syntax = "proto3";
 package grains;
 
+option go_package = "realtimemap-go/backend/grains";
+
 message Empty {}
 
 message Position {
@@ -24,8 +26,8 @@ message GeoPoint {
 }
 
 enum GeofenceEvent {
-    enter = 0;
-    exit = 1;
+    Enter = 0;
+    Exit = 1;
 }
 
 message Notification {
