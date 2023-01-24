@@ -8,7 +8,7 @@ type Organization struct {
 
 var AllOrganizations = map[string]*Organization{
 	"0006": {
-		Id:   "006",
+		Id:   "0006",
 		Name: "Oy Pohjolan Liikenne Ab",
 	},
 	"0012": {
