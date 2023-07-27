@@ -23,7 +23,7 @@ func (h *AppHub) Initialize(ctx signalr.HubContext) {
 	h.Hub.Initialize(ctx)
 	// Initialize will be called on first connection to the hub
 	// if position is sent before that, the HubContext is nil and application crashes
-	// TODO: possible bug in singlar implementation?
+	// TODO: possible bug in signalr implementation?
 	h.initialized = true
 }
 
