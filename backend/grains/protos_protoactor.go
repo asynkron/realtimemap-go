@@ -6,24 +6,18 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"log/slog"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/cluster"
-	logmod "github.com/asynkron/protoactor-go/log"
 	"google.golang.org/protobuf/proto"
 )
 
 var (
-	plog = logmod.New(logmod.InfoLevel, "[GRAIN][grains]")
 	_    = proto.Marshal
 	_    = fmt.Errorf
 	_    = math.Inf
 )
-
-// SetLogLevel sets the log level.
-func SetLogLevel(level logmod.Level) {
-	plog.SetLevel(level)
-}
 
 var xVehicleFactory func() Vehicle
 
@@ -89,7 +83,7 @@ func (g *VehicleGrainClient) OnPosition(r *Position, opts ...cluster.GrainCallOp
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 0, MessageData: bytes}
-	resp, err := g.cluster.Call(g.Identity, "Vehicle", reqMsg, opts...)
+	resp, err := g.cluster.Request(g.Identity, "Vehicle", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +109,7 @@ func (g *VehicleGrainClient) GetPositionsHistory(r *GetPositionsHistoryRequest, 
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 1, MessageData: bytes}
-	resp, err := g.cluster.Call(g.Identity, "Vehicle", reqMsg, opts...)
+	resp, err := g.cluster.Request(g.Identity, "Vehicle", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +161,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 			req := &Position{}
 			err := proto.Unmarshal(msg.MessageData, req)
 			if err != nil {
-				plog.Error("OnPosition(Position) proto.Unmarshal failed.", logmod.Error(err))
+				ctx.Logger().Error("[Grain] OnPosition(Position) proto.Unmarshal failed.", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -180,7 +174,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 			}
 			bytes, err := proto.Marshal(r0)
 			if err != nil {
-				plog.Error("OnPosition(Position) proto.Marshal failed", logmod.Error(err))
+				ctx.Logger().Error("[Grain] OnPosition(Position) proto.Marshal failed", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -191,7 +185,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 			req := &GetPositionsHistoryRequest{}
 			err := proto.Unmarshal(msg.MessageData, req)
 			if err != nil {
-				plog.Error("GetPositionsHistory(GetPositionsHistoryRequest) proto.Unmarshal failed.", logmod.Error(err))
+				ctx.Logger().Error("[Grain] GetPositionsHistory(GetPositionsHistoryRequest) proto.Unmarshal failed.", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -204,7 +198,7 @@ func (a *VehicleActor) Receive(ctx actor.Context) {
 			}
 			bytes, err := proto.Marshal(r0)
 			if err != nil {
-				plog.Error("GetPositionsHistory(GetPositionsHistoryRequest) proto.Marshal failed", logmod.Error(err))
+				ctx.Logger().Error("[Grain] GetPositionsHistory(GetPositionsHistoryRequest) proto.Marshal failed", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -281,7 +275,7 @@ func (g *OrganizationGrainClient) OnPosition(r *Position, opts ...cluster.GrainC
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 0, MessageData: bytes}
-	resp, err := g.cluster.Call(g.Identity, "Organization", reqMsg, opts...)
+	resp, err := g.cluster.Request(g.Identity, "Organization", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +301,7 @@ func (g *OrganizationGrainClient) GetGeofences(r *GetGeofencesRequest, opts ...c
 		return nil, err
 	}
 	reqMsg := &cluster.GrainRequest{MethodIndex: 1, MessageData: bytes}
-	resp, err := g.cluster.Call(g.Identity, "Organization", reqMsg, opts...)
+	resp, err := g.cluster.Request(g.Identity, "Organization", reqMsg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +353,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 			req := &Position{}
 			err := proto.Unmarshal(msg.MessageData, req)
 			if err != nil {
-				plog.Error("OnPosition(Position) proto.Unmarshal failed.", logmod.Error(err))
+				ctx.Logger().Error("[Grain] OnPosition(Position) proto.Unmarshal failed.", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -372,7 +366,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 			}
 			bytes, err := proto.Marshal(r0)
 			if err != nil {
-				plog.Error("OnPosition(Position) proto.Marshal failed", logmod.Error(err))
+				ctx.Logger().Error("[Grain] OnPosition(Position) proto.Marshal failed", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -383,7 +377,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 			req := &GetGeofencesRequest{}
 			err := proto.Unmarshal(msg.MessageData, req)
 			if err != nil {
-				plog.Error("GetGeofences(GetGeofencesRequest) proto.Unmarshal failed.", logmod.Error(err))
+				ctx.Logger().Error("[Grain] GetGeofences(GetGeofencesRequest) proto.Unmarshal failed.", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
@@ -396,7 +390,7 @@ func (a *OrganizationActor) Receive(ctx actor.Context) {
 			}
 			bytes, err := proto.Marshal(r0)
 			if err != nil {
-				plog.Error("GetGeofences(GetGeofencesRequest) proto.Marshal failed", logmod.Error(err))
+				ctx.Logger().Error("[Grain] GetGeofences(GetGeofencesRequest) proto.Marshal failed", slog.Any("error", err))
 				resp := &cluster.GrainErrorResponse{Err: err.Error()}
 				ctx.Respond(resp)
 				return
